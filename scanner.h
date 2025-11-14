@@ -12,7 +12,7 @@
 
 #define LONGITUD 33 // Los identificadores tienen como longitud máxima 32 bits
 
-FILE *abrir_arcivo(char nombre[]);
+FILE *abrir_archivo(char nombre[]);
 int es_constante(char *cadena);
 void scanner();
 

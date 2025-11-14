@@ -1,6 +1,6 @@
 #include "scanner.h"
 
-FILE *abrir_arcivo(char nombre[]) {
+FILE *abrir_archivo(char nombre[]) {
     FILE *archivo = fopen(nombre, "r");
 
     if (archivo == NULL) {
@@ -21,7 +21,7 @@ int es_constante(char cadena[]){
 
 void scanner() {
 
-    FILE *entrada = abrir_arcivo("../entrada.txt");
+    FILE *entrada = abrir_archivo("../entrada.txt");
 
     // Definir variables de análisis
     
