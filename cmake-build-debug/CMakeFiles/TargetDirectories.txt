@@ -1,0 +1,3 @@
+/Users/fran/Documents/Clion Proyectos/TP-Teoria-de-la-Computacion/cmake-build-debug/CMakeFiles/SALIDA.dir
+/Users/fran/Documents/Clion Proyectos/TP-Teoria-de-la-Computacion/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/fran/Documents/Clion Proyectos/TP-Teoria-de-la-Computacion/cmake-build-debug/CMakeFiles/rebuild_cache.dir
