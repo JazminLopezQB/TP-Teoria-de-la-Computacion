@@ -1,51 +1,82 @@
 #include "scanner.h"
-#include <stdio.h>
-#include <string.h>
 
-void scanner() {
+FILE *abrir_arcivo(char nombre[]) {
+    FILE *archivo = fopen(nombre, "r");
 
-    // Abrir archivo de entrada y validar que no haya errores
-    FILE *entrada = fopen("../entrada.txt", "r");
-    
-    if (entrada == NULL) {
+    if (archivo == NULL) {
         printf("\nHubo un error al abrir el archivo\n");
         exit(-1);
         }
+    return archivo;
+    }
+
+int es_constante(char cadena[]){
+    for (int i = 0; i < strlen(cadena); i++){
+        if (!isdigit(cadena[i])){
+            return 0;
+            }
+        }
+    return 1;
+    }
+
+void scanner() {
+
+    FILE *entrada = abrir_arcivo("../entrada.txt");
 
     // Definir variables de análisis
     
     char token[LONGITUD]; // Se van guardando lo que se lee del archivo
-    char separadores[] = " ;*/+-,=:()\n"; // Cosas que pueden provocar que se corte un identificador
+    char separadores[] = " ;*/+-,=:()\n\t"; // Cosas que pueden provocar que se corte un identificador
     char errores[] = "@!^$"; // Caracteres que producen errores
     char caracter; // Entrada del archivo
     int i = 0; // Indice para escribir caracter en token
 
     while ((caracter = fgetc(entrada)) != EOF) { //TODO: Revisar por que strcmp(token, "fin\0") != 0 no anda
-        // TODO: También habria que poner un condicional para que descarte cualquier cosa que vena antes de "inicio"
-        if (strchr(separadores, caracter) != NULL) { // Si encuentra un separador
-            if (i > 0) { // Primero termina de procesar lo que habia antes
+        // TODO: También habria que poner un condicional para que descarte cualquier cosa que venga antes de "inicio"
+        if (strchr(separadores, caracter) != NULL || i >= LONGITUD - 1) { // Si encuentra un separador o no hay espacio
+            if (i > 0){
                 token[i] = '\0';
-                printf("Token: %s\n", token);
+                if (es_constante(token))
+                    printf("Constante: '%s'\n", token);
+                else
+                    printf("Identificador: '%s'\n", token);
                 i = 0; // Reinicio el indice
-                }
-
-            if (caracter != '\n' && caracter != ' ') { // Los espacios y saltos no deberian mostrarse
-                printf("Separador: %c\n", caracter);
-                }
             }
-        else { // Si hay espacio se copia caracter, sino se empieza un analisis nuevo
-            if (i < LONGITUD - 1) {
-                token[i] = caracter;
-                i++;
-                }
-            else {
-                token[i] = '\0';
-                printf("Token: %s\n", token);
-                i = 0;
-                }
+            }
+        else {
+            token[i] = caracter;
+            i++;
+            }
+        switch (caracter) {
+            case ';':
+                printf("Punto y coma: '%c'\n", caracter);
+                break;
+            case ',':
+                printf("Coma: '%c'\n", caracter);
+                break;
+            case '*':
+                printf("Multiplicacion: '%c'\n", caracter);
+                break;
+            case '/':
+                printf("Division: '%c'\n", caracter);
+                break;
+            case '+':
+                printf("Suma: '%c'\n", caracter);
+                break;
+            case '-':
+                printf("Resta: '%c'\n", caracter);
+                break;
+            case '(':
+                printf("Parentesis que abre: '%c'\n", caracter);
+                break;
+            case ')':
+                printf("Parentesis que cierra: '%c'\n", caracter);
+                break;
+            default:
+                continue;
+                break;
             }
         }
-        
-    
+
     fclose(entrada);
     }

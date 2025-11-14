@@ -3,6 +3,7 @@
 
 // Bibliotecas
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,8 @@
 
 #define LONGITUD 33 // Los identificadores tienen como longitud máxima 32 bits
 
+FILE *abrir_arcivo(char nombre[]);
+int es_constante(char *cadena);
 void scanner();
 
 #endif // TP_FINAL_SCANNER_H
