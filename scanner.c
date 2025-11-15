@@ -34,7 +34,7 @@ int es_separador_especial(int c){
     }
 
 int es_caracter_valido(int c) {
-    if (es_separador_simple(c) || es_separador_especial(c) || isalnum(c) || c==':' || c=='=') return 1;
+    if (es_separador_simple(c) || es_separador_especial(c) || c==':' || c=='=') return 1;
     return 0;
     }
 
@@ -73,7 +73,7 @@ void scanner() {
             
             token[0] = c;
             ti++;
-            while ((c = fgetc(entrada)) != EOF && !es_separador_especial(c)) {
+            while ((c = fgetc(entrada)) != EOF && !es_caracter_valido(c)) {
                 if (ti < LONGITUD - 1) token[ti++] = c;
                 }
                 token[ti] = '\0';
@@ -86,7 +86,7 @@ void scanner() {
             ti = 0;
             if (c != EOF) ungetc(c, entrada);
             }
-        else{
+        else if (!es_separador_especial(c)){
             if (isalnum(c)) {
                 token[0] = c;
                 ti = 1;
@@ -112,7 +112,10 @@ void scanner() {
             else if (c == ':') {
                 int c = fgetc(entrada);
                 if (c == '=') { printf("Asignación ':='\n"); }
-                else { printf("Error en asignación solo vino ':'\n"); }
+                else {
+                    printf("Error en asignación solo vino ':'\n");
+                    if (c != EOF) ungetc(c, entrada);
+                    }
                 continue;
                 }
             else if (es_separador_simple(c)) {
@@ -128,14 +131,14 @@ void scanner() {
                     }
                 continue; 
                 }
-            else if (!es_caracter_valido(c)){
+            else if (!es_caracter_valido(c) && !isalnum(c)){
                 char errbuf[LONGITUD*2];
                 int ei = 0;
                 errbuf[ei++] = (char)c;
 
-                while ((c = fgetc(entrada)) != EOF && !es_caracter_valido(c)) {
+                while ((c = fgetc(entrada)) != EOF && !es_caracter_valido(c) && !isalnum(c)) {
                     if (ei < (int)sizeof(errbuf)-1) errbuf[ei++] = (char)c;
-                }
+                    }
                 errbuf[ei] = '\0';
 
                 printf("Error general '%s'\n", errbuf);
