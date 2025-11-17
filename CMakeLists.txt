@@ -1,15 +1,9 @@
-cmake_minimum_required(VERSION 3.22.1)
-project(Lexico)
+cmake_minimum_required(VERSION 3.22)
+project(Lexico C)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_C_STANDARD 99)
 
-# Archivos fuente
-set(SOURCES
-    main.c
-    scanner.c
-    scanner.h
-    )
-
-# Crear ejecutable
-add_executable(SALIDA ${SOURCES})
-
+add_executable(SALIDA
+        main.c
+        scanner.c
+        )
