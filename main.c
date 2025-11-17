@@ -1,27 +1,15 @@
-#include <stdio.h>
 #include "scanner.h"
 
-int main(int argc, char *argv[]) {
-
-    FILE *f = stdin;
-
-    if (argc >= 2) {
-        f = fopen(argv[1], "r");
-        if (!f) {
-            perror("No se puede abrir archivo");
-            return 1;
-        }
-    }
-
-    iniciarScanner(f);
-
-    Token t;
-    do {
-        t = proxToken();
+int main() {
+    FILE *f = abrir_archivo("../entrada.txt");
+    Token t = scanner(f);
+    
+    do { // Mientras no se reciba 'fin' el scanner analizará la entrada y se mostrará el resultado
         imprimirToken(t);
-    } while (t.tipo != TOK_FIN);
+        t = scanner(f);
+        } while (t.tipo != FIN);
 
-    if (f != stdin) fclose(f);
+    fclose(f);
 
     return 0;
 }

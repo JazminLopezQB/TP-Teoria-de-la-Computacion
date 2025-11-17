@@ -1,31 +1,40 @@
 #include "scanner.h"
-#include <ctype.h>
-#include <string.h>
-
-static FILE *entrada = NULL;
 
 // ============================================================================
-// CLASES DE CARACTERES — deben coincidir EXACTAMENTE con la tabla TT (15 cols)
+// Definición de Tabla y Caracteres
 // ============================================================================
-enum {
-    C_LETRA = 0,
-    C_DIGITO,
-    C_DOSP,
-    C_IGUAL,
-    C_PUNTOYCOMA,
-    C_COMA,
-    C_MULT,
-    C_DIV,
-    C_MAS,
-    C_MENOS,
-    C_PAR_ABRE,
-    C_PAR_CIERRA,
-    C_ESP,
-    C_INV,
-    C_EOF
+
+static int TT[4][15] = { // Tabla de Transición
+/*                      L      D        :   =        ;         ,       *   /          +    -      (   )  ESP INV EOF */
+/*0*/       {  1,  2,  3, 100, 14, 15, 16, 17, 18, 19, 20, 21,  0, 99, 22 },
+/*1*/       {  1,  1, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 },
+/*2*/       { 99,  2, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 99, 12 },
+/*3*/       { 100, 100, 100, 13, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100 }
 };
 
-static int claseCaracter(int c) {
+enum { // Posibles caracteres
+    C_LETRA = 0, // Letras
+    C_DIGITO = 1, // Digitos
+    C_DOSP = 2, // :
+    C_IGUAL = 3, // =
+    C_PUNTOYCOMA = 4, // ;
+    C_COMA = 5, // ,
+    C_MULT = 6, // *
+    C_DIV = 7, // /
+    C_MAS = 8, // +
+    C_MENOS = 9, // -
+    C_PAR_ABRE = 10, // (
+    C_PAR_CIERRA = 11, // )
+    C_ESP = 12, // Espacios y saltos de linea
+    C_INV = 13, // Caracter Inválido
+    C_EOF =14 // Fin de archivo
+    };
+
+/* ---------------------------------------------------------
+    FUNCIONES AUXILIARES
+   --------------------------------------------------------- */
+
+static int tipoCaracter(char c) {
     if (c == EOF) return C_EOF;
     if (isalpha(c)) return C_LETRA;
     if (isdigit(c)) return C_DIGITO;
@@ -40,154 +49,98 @@ static int claseCaracter(int c) {
     if (c == '(') return C_PAR_ABRE;
     if (c == ')') return C_PAR_CIERRA;
     if (isspace(c)) return C_ESP;
-    return C_INV;
-}
+    return C_INV; // Si no es ninguno de los anteriores, es un caracter inválido
+    }
 
-// ============================================================================
-// TABLA DE TRANSICIÓN (TU TABLA EXACTA)
-// Estados de trabajo: 0–3
-// Estados aceptores >= 11
-// Error general = 99
-// ============================================================================
-static int TT[4][15] = {
-/*            L   D   :   =   ;   ,   *   /   +   -   (   )  ESP INV EOF */
-/*0*/       {  1,  2,  3, 99, 14, 15, 16, 17, 18, 19, 20, 21,  0, 99, 22 },
-/*1*/       {  1,  1, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 },
-/*2*/       { 99,  2, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 99, 12 },
-/*3*/       { 99, 99, 99, 13, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 }
-};
-
-// ============================================================================
-// Mapeo estado → token
-// ============================================================================
 static TokenTipo tokenDeEstado(int est) {
     switch (est) {
-        case 11: return TOK_IDENTIFIER;
-        case 12: return TOK_CONSTANT;
-        case 13: return TOK_ASIGN;
-        case 14: return TOK_PUNTOYCOMA;
-        case 15: return TOK_COMA;
-        case 16: return TOK_MULT;
-        case 17: return TOK_DIV;
-        case 18: return TOK_SUMA;
-        case 19: return TOK_MENOS;
-        case 20: return TOK_LPAREN;
-        case 21: return TOK_RPAREN;
-        case 22: return TOK_FIN;
-        default: return TOK_ERROR_GENERAL;
+        case 11: return IDENTIFICADOR; // Fin de Identificador
+        case 12: return CONSTANTE; // Fin de Constante
+        case 13: return ASIGNAR; // Asignación bien formada
+        case 14: return PUNTOYCOMA; // ;
+        case 15: return COMA; // ,
+        case 16: return MULTIPLICAR; // *
+        case 17: return DIV; // /
+        case 18: return SUMA; // +
+        case 19: return MENOS; // -
+        case 20: return PAREN_ABR; // (
+        case 21: return PAREN_CERR; // )
+        case 22: return FIN; // EOF/FDT
+        case 100: return ERROR_ASIGNACION;
+        default: return ERROR_GENERAL; // Error
+        }
     }
-}
 
-// ============================================================================
-static Token hacerToken(TokenTipo tipo, const char *lex) {
+static Token crearToken(TokenTipo tipo, const char *lex) {
     Token t;
     t.tipo = tipo;
-    strncpy(t.lexema, lex ? lex : "", 255);
-    t.lexema[255] = '\0';
+    strcpy(t.lexema, lex);
     return t;
-}
+    }
 
-void iniciarScanner(FILE *f) {
-    entrada = f;
-}
+void imprimirToken(Token t) { // Mostrar los lexemas o errores según corresponda
+    switch (t.tipo) {
+        case FIN: // Hay que mostrar el identificador 'fin'
+        case IDENTIFICADOR:  printf("Identificador '%s'\n",   t.lexema); break;
+        case CONSTANTE:    printf("Constante '%s'\n",       t.lexema); break;
+        case PUNTOYCOMA:  printf("Punto y coma ';'\n");    break;
+        case COMA:        printf("Coma ','\n");            break;
+        case PAREN_ABR:      printf("Paréntesis que abre '('\n"); break;
+        case PAREN_CERR:      printf("Paréntesis que cierra ')'\n"); break;
+        case SUMA:        printf("Más '+'\n");             break;
+        case MENOS:       printf("Menos '-'\n");            break;
+        case MULTIPLICAR:        printf("Multiplicación '*'\n");  break;
+        case DIV:         printf("División '/'\n");        break;
+        case ASIGNAR:       printf("Asignación ':='\n");     break;
+        case ERROR_ASIGNACION: printf("Error en asignación, solo vino '%s'\n", t.lexema); break;
+        case ERROR_GENERAL: printf("Error general '%s'\n", t.lexema); break;
+        }
+    }
+
+FILE *abrir_archivo(char nombre[]) {
+    FILE *archivo = fopen(nombre, "r");
+
+    if (archivo == NULL) {
+        printf("\nHubo un error al abrir el archivo\n");
+        exit(-1);
+        }
+    return archivo;
+    }
 
 // ============================================================================
-// SCANNER PRINCIPAL (igual al del compañero, adaptado a tus 15 clases)
+// SCANNER PRINCIPAL
 // ============================================================================
-Token proxToken() {
+Token scanner(FILE *entrada) {
 
-    char lex[256];
-    int p = 0;
-    int estado = 0;
-
+    char lex[LONGITUD]; // Lexema
+    int p = 0; // Punto en el lexema
+    int estado = 0; // Estado actual, empieza en el estado inicial 0
+    int nuevo = 0; // Siguiente estado, si bien también empieza en 0 será el siguiente de estado
+    int c, cl; // Caracter de entrada y su tipo
+    
     while (1) {
 
-        int c = fgetc(entrada);
-        int cl = claseCaracter(c);
+        // Se lee la entrada y se determina que clase de caractér se recibió
+        c = fgetc(entrada);
+        cl = tipoCaracter(c);
+        nuevo = TT[estado][cl]; // Obtener el estado al que se pasa según la tabla
 
-        // EOF sin empezar token
-        if (cl == C_EOF && p == 0)
-            return hacerToken(TOK_FIN, "");
+        // Errores iniciales
+        if (c == EOF && p == 0) { return crearToken(FIN, "Error, archivo vacio");}
+        if (nuevo == 0 && estado == 0) continue; // Ignorar espacios antes de 'inicio'
+        
+        if ((nuevo == 11 || nuevo == 12) && c != EOF) { ungetc(c, entrada);} // Devolver caracter procesado de más
+        else if (p < LONGITUD -1 && (nuevo != 100 || c == '=')) lex[p++] = c; // Evitar agregar caracteres erroneos o consumir el error solo '='
+        
+        // Los valores de nuevo son discretos, si es > 4 es por que es un estado aceptor o error
+        if (4 < nuevo || p == LONGITUD - 1 ) {
+            lex[p] = '\0'; // Finalizar el lexema
+            if (p == LONGITUD - 1) nuevo = (nuevo == 1) ? 11 : (nuevo == 2 ? 12 : 99);
+            return crearToken(tokenDeEstado(nuevo), lex);
+            }
 
-        // EOF cortando token
-        if (cl == C_EOF && p > 0) {
-            lex[p] = '\0';
-            return hacerToken(tokenDeEstado(estado), lex);
+        // Si nuevo siguen en un estado de trabajo/transición hay que continuar
+        estado = nuevo;
         }
-
-        // ignorar espacios antes
-        if (cl == C_ESP && p == 0)
-            continue;
-
-        // espacio cortando token
-        if (cl == C_ESP && p > 0) {
-            lex[p] = '\0';
-            return hacerToken(tokenDeEstado(estado), lex);
-        }
-
-        // inválido al inicio
-        if (cl == C_INV && p == 0) {
-            lex[0] = (char)c;
-            lex[1] = '\0';
-            return hacerToken(TOK_ERROR_GENERAL, lex);
-        }
-
-        int nuevo = TT[estado][cl];
-
-        // estado de trabajo
-        if (nuevo < 4) {
-            lex[p++] = (char)c;
-            estado = nuevo;
-            continue;
-        }
-
-        // ===============================
-        // Estados aceptores
-        // ===============================
-
-        // ASIGNACION :=
-        if (nuevo == 13) {
-            lex[p++] = '=';
-            lex[p] = '\0';
-            return hacerToken(TOK_ASIGN, lex);
-        }
-
-        // ID o NUM → ungetc
-        if (nuevo == 11 || nuevo == 12) {
-            ungetc(c, entrada);
-            lex[p] = '\0';
-            return hacerToken(tokenDeEstado(nuevo), lex);
-        }
-
-        // símbolos de un solo carácter
-        lex[p++] = (char)c;
-        lex[p] = '\0';
-        return hacerToken(tokenDeEstado(nuevo), lex);
     }
-}
 
-// ============================================================================
-void imprimirToken(Token t) {
-
-    switch (t.tipo) {
-
-        case TOK_IDENTIFIER:  printf("Identificador '%s'\n",   t.lexema); break;
-        case TOK_CONSTANT:    printf("Constante '%s'\n",       t.lexema); break;
-        case TOK_PUNTOYCOMA:  printf("Punto y coma ';'\n");    break;
-        case TOK_COMA:        printf("Coma ','\n");            break;
-        case TOK_LPAREN:      printf("Parentesis que abre '('\n"); break;
-        case TOK_RPAREN:      printf("Parentesis que cierra ')'\n"); break;
-        case TOK_SUMA:        printf("Suma '+'\n");             break;
-        case TOK_MENOS:       printf("Menos '-'\n");            break;
-        case TOK_MULT:        printf("Multiplicacion '*'\n");  break;
-        case TOK_DIV:         printf("Division '/'\n");        break;
-        case TOK_ASIGN:       printf("Asignacion ':='\n");     break;
-
-        case TOK_ERROR_GENERAL:
-            printf("Error '%s'\n", t.lexema);
-            break;
-
-        case TOK_FIN:
-            break;
-    }
-}

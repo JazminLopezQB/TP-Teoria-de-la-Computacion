@@ -2,3 +2,5 @@ TP-Enunciado.pdf
 salida.txt
 build
 .cache
+.idea
+cmake-build-debug
