@@ -17,7 +17,7 @@ int es_constante(char cadena[]);
 int es_separador_simple(int c);
 int es_separador_especial(int c);
 int es_caracter_valido(int c);
-void mostrar_identificador(char token[], int *ti, int tipo);
-void scanner();
+void mostrar_identificador(char token[], int tipo);
+char * scanner(FILE *entrada);
 
 #endif // TP_FINAL_SCANNER_H
