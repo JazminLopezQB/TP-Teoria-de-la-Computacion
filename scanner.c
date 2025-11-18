@@ -31,7 +31,7 @@ enum { // Posibles caracteres
     };
 
 /* ---------------------------------------------------------
-    FUNCIONES AUXILIARES
+    Funciones Auxiliares
    --------------------------------------------------------- */
 
 static int tipoCaracter(char c) {
@@ -108,7 +108,7 @@ FILE *abrir_archivo(char nombre[]) {
     }
 
 // ============================================================================
-// SCANNER PRINCIPAL
+// Scanner Principal
 // ============================================================================
 Token scanner(FILE *entrada) {
 
@@ -129,8 +129,8 @@ Token scanner(FILE *entrada) {
         if (c == EOF && p == 0) { return crearToken(FIN, "Error, archivo vacio");}
         if (nuevo == 0 && estado == 0) continue; // Ignorar espacios antes de 'inicio'
         
-        if ((nuevo == 11 || nuevo == 12) && c != EOF) { ungetc(c, entrada);} // Devolver caracter procesado de más
-        else if (p < LONGITUD -1 && (nuevo != 100 || c == '=')) lex[p++] = c; // Evitar agregar caracteres erroneos o consumir el error solo '='
+        if ((nuevo == 11 || nuevo == 12 || (nuevo == 100 && estado == 3)) && c != EOF) { ungetc(c, entrada);} // Devolver caracter procesado de más
+        else if (p < LONGITUD -1) lex[p++] = c; // Evitar agregar caracteres erroneos o consumir el error solo '='
         
         // Los valores de nuevo son discretos, si es > 4 es por que es un estado aceptor o error
         if (4 < nuevo || p == LONGITUD - 1 ) {

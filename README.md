@@ -2,7 +2,7 @@
 Repositorio del Trabajo Practico Final de Teoría de la Computación
 
 - Falta hacer:
-    - [ ] Código
-    - [ ] Tabla
+    - [x] Código
+    - [x] Tabla
 
 ---
