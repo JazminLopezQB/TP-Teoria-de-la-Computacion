@@ -1,184 +1,82 @@
 #include "scanner.h"
-#include <ctype.h>
-#include <string.h>
 
-static FILE *entrada = NULL;
+FILE *abrir_archivo(char nombre[]) {
+    FILE *archivo = fopen(nombre, "r");
 
-// CLASES DE CARACTERES
-enum {
-    C_LETRA = 0,
-    C_DIGITO,
-    C_DOSP,
-    C_IGUAL,
-    C_PUNTOYCOMA,
-    C_COMA,
-    C_MULT,
-    C_DIV,
-    C_MAS,
-    C_MENOS,
-    C_PAR_ABRE,
-    C_PAR_CIERRA,
-    C_ESP,
-    C_INV,
-    C_EOF
-};
-
-static int claseCaracter(int c) {
-    if (c == EOF) return C_EOF;
-    if (isalpha(c)) return C_LETRA;
-    if (isdigit(c)) return C_DIGITO;
-    if (c == ':') return C_DOSP;
-    if (c == '=') return C_IGUAL;
-    if (c == ';') return C_PUNTOYCOMA;
-    if (c == ',') return C_COMA;
-    if (c == '*') return C_MULT;
-    if (c == '/') return C_DIV;
-    if (c == '+') return C_MAS;
-    if (c == '-') return C_MENOS;
-    if (c == '(') return C_PAR_ABRE;
-    if (c == ')') return C_PAR_CIERRA;
-    if (isspace(c)) return C_ESP;
-    return C_INV;
-}
-
-// TABLA DE TRANSICIÓN
-static int TT[4][15] = {
-/*            L   D   :   =   ;   ,   *   /   +   -   (   )  ESP INV EOF */
-/*0*/       {  1,  2,  3, 99, 14, 15, 16, 17, 18, 19, 20, 21,  0, 99, 22 },
-/*1*/       {  1,  1, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 },
-/*2*/       { 99,  2, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 99, 12 },
-/*3*/       { 99, 99, 99, 13, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 }
-};
-
-// Mapeo estado → token
-static TokenTipo tokenDeEstado(int est) {
-    switch (est) {
-        case 11: return TOK_IDENTIFIER;
-        case 12: return TOK_CONSTANT;
-        case 13: return TOK_ASIGN;
-        case 14: return TOK_PUNTOYCOMA;
-        case 15: return TOK_COMA;
-        case 16: return TOK_MULT;
-        case 17: return TOK_DIV;
-        case 18: return TOK_SUMA;
-        case 19: return TOK_MENOS;
-        case 20: return TOK_LPAREN;
-        case 21: return TOK_RPAREN;
-        case 22: return TOK_FIN;
-        default: return TOK_ERROR_GENERAL;
+    if (archivo == NULL) {
+        printf("\nHubo un error al abrir el archivo\n");
+        exit(-1);
+        }
+    return archivo;
     }
-}
 
-// ============================================================================
-static Token hacerToken(TokenTipo tipo, const char *lex) {
-    Token t;
-    t.tipo = tipo;
-    strncpy(t.lexema, lex ? lex : "", 255);
-    t.lexema[255] = '\0';
-    return t;
-}
-
-void iniciarScanner(FILE *f) {
-    entrada = f;
-}
-
-// ============================================================================
-// SCANNER PRINCIPAL
-// ============================================================================
-Token proxToken() {
-
-    char lex[256];
-    int p = 0;
-    int estado = 0;
-
-    while (1) {
-
-        int c = fgetc(entrada);
-        int cl = claseCaracter(c);
-
-        // EOF sin empezar token
-        if (cl == C_EOF && p == 0)
-            return hacerToken(TOK_FIN, "");
-
-        // EOF cortando token
-        if (cl == C_EOF && p > 0) {
-            lex[p] = '\0';
-            return hacerToken(tokenDeEstado(estado), lex);
+int es_constante(char cadena[]){
+    for (int i = 0; i < strlen(cadena); i++){
+        if (!isdigit(cadena[i])){
+            return 0;
+            }
         }
-
-        // ignorar espacios antes
-        if (cl == C_ESP && p == 0)
-            continue;
-
-        // espacio cortando token
-        if (cl == C_ESP && p > 0) {
-            lex[p] = '\0';
-            return hacerToken(tokenDeEstado(estado), lex);
-        }
-
-        // inválido al inicio
-        if (cl == C_INV && p == 0) {
-            lex[0] = (char)c;
-            lex[1] = '\0';
-            return hacerToken(TOK_ERROR_GENERAL, lex);
-        }
-
-        int nuevo = TT[estado][cl];
-
-        // estado de trabajo
-        if (nuevo < 4) {
-            lex[p++] = (char)c;
-            estado = nuevo;
-            continue;
-        }
-
-        // ===============================
-        // Estados aceptores
-        // ===============================
-
-        // ASIGNACION :=
-        if (nuevo == 13) {
-            lex[p++] = '=';
-            lex[p] = '\0';
-            return hacerToken(TOK_ASIGN, lex);
-        }
-
-        // ID o NUM → ungetc
-        if (nuevo == 11 || nuevo == 12) {
-            ungetc(c, entrada);
-            lex[p] = '\0';
-            return hacerToken(tokenDeEstado(nuevo), lex);
-        }
-
-        // símbolos de un solo carácter
-        lex[p++] = (char)c;
-        lex[p] = '\0';
-        return hacerToken(tokenDeEstado(nuevo), lex);
+    return 1;
     }
-}
 
-// ============================================================================
-void imprimirToken(Token t) {
+void scanner() {
 
-    switch (t.tipo) {
+    FILE *entrada = abrir_archivo("../entrada.txt");
 
-        case TOK_IDENTIFIER:  printf("Identificador '%s'\n",   t.lexema); break;
-        case TOK_CONSTANT:    printf("Constante '%s'\n",       t.lexema); break;
-        case TOK_PUNTOYCOMA:  printf("Punto y coma ';'\n");    break;
-        case TOK_COMA:        printf("Coma ','\n");            break;
-        case TOK_LPAREN:      printf("Parentesis que abre '('\n"); break;
-        case TOK_RPAREN:      printf("Parentesis que cierra ')'\n"); break;
-        case TOK_SUMA:        printf("Suma '+'\n");             break;
-        case TOK_MENOS:       printf("Menos '-'\n");            break;
-        case TOK_MULT:        printf("Multiplicacion '*'\n");  break;
-        case TOK_DIV:         printf("Division '/'\n");        break;
-        case TOK_ASIGN:       printf("Asignacion ':='\n");     break;
+    // Definir variables de análisis
+    
+    char token[LONGITUD]; // Se van guardando lo que se lee del archivo
+    char separadores[] = " ;*/+-,=:()\n\t"; // Cosas que pueden provocar que se corte un identificador
+    char errores[] = "@!^$"; // Caracteres que producen errores
+    char caracter; // Entrada del archivo
+    int i = 0; // Indice para escribir caracter en token
 
-        case TOK_ERROR_GENERAL:
-            printf("Error '%s'\n", t.lexema);
-            break;
+    while ((caracter = fgetc(entrada)) != EOF) { //TODO: Revisar por que strcmp(token, "fin\0") != 0 no anda
+        // TODO: También habria que poner un condicional para que descarte cualquier cosa que venga antes de "inicio"
+        if (strchr(separadores, caracter) != NULL || i >= LONGITUD - 1) { // Si encuentra un separador o no hay espacio
+            if (i > 0){
+                token[i] = '\0';
+                if (es_constante(token))
+                    printf("Constante: '%s'\n", token);
+                else
+                    printf("Identificador: '%s'\n", token);
+                i = 0; // Reinicio el indice
+            }
+            }
+        else {
+            token[i] = caracter;
+            i++;
+            }
+        switch (caracter) {
+            case ';':
+                printf("Punto y coma: '%c'\n", caracter);
+                break;
+            case ',':
+                printf("Coma: '%c'\n", caracter);
+                break;
+            case '*':
+                printf("Multiplicacion: '%c'\n", caracter);
+                break;
+            case '/':
+                printf("Division: '%c'\n", caracter);
+                break;
+            case '+':
+                printf("Suma: '%c'\n", caracter);
+                break;
+            case '-':
+                printf("Resta: '%c'\n", caracter);
+                break;
+            case '(':
+                printf("Parentesis que abre: '%c'\n", caracter);
+                break;
+            case ')':
+                printf("Parentesis que cierra: '%c'\n", caracter);
+                break;
+            default:
+                continue;
+                break;
+            }
+        }
 
-        case TOK_FIN:
-            break;
+    fclose(entrada);
     }
-}
