@@ -34,6 +34,16 @@ enum { // Posibles caracteres
     Funciones Auxiliares
    --------------------------------------------------------- */
 
+FILE *abrir_archivo(char nombre[]) {
+    FILE *archivo = fopen(nombre, "r");
+
+    if (archivo == NULL) {
+        printf("\nHubo un error al abrir el archivo\n");
+        exit(-1);
+        }
+    return archivo;
+    }
+
 static int tipoCaracter(char c) {
     if (c == EOF) return C_EOF;
     if (isalpha(c)) return C_LETRA;
@@ -52,7 +62,7 @@ static int tipoCaracter(char c) {
     return C_INV; // Si no es ninguno de los anteriores, es un caracter inválido
     }
 
-static TokenTipo tokenDeEstado(int est) {
+static TokenTipo tokensFinales(int est) {
     switch (est) {
         case 11: return IDENTIFICADOR; // Fin de Identificador
         case 12: return CONSTANTE; // Fin de Constante
@@ -97,16 +107,6 @@ void imprimirToken(Token t) { // Mostrar los lexemas o errores según correspond
         }
     }
 
-FILE *abrir_archivo(char nombre[]) {
-    FILE *archivo = fopen(nombre, "r");
-
-    if (archivo == NULL) {
-        printf("\nHubo un error al abrir el archivo\n");
-        exit(-1);
-        }
-    return archivo;
-    }
-
 // ============================================================================
 // Scanner Principal
 // ============================================================================
@@ -136,7 +136,7 @@ Token scanner(FILE *entrada) {
         if (4 < nuevo || p == LONGITUD - 1 ) {
             lex[p] = '\0'; // Finalizar el lexema
             if (p == LONGITUD - 1) nuevo = (nuevo == 1) ? 11 : (nuevo == 2 ? 12 : 99);
-            return crearToken(tokenDeEstado(nuevo), lex);
+            return crearToken(tokensFinales(nuevo), lex);
             }
 
         // Si nuevo siguen en un estado de trabajo/transición hay que continuar
