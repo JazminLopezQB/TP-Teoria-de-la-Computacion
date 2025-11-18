@@ -1,19 +1,32 @@
-#ifndef TP_FINAL_SCANNER_H
-#define TP_FINAL_SCANNER_H
+#ifndef SCANNER_H
+#define SCANNER_H
 
-// Bibliotecas
-
-#include <ctype.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-// Definiciones
+typedef enum {
+    TOK_IDENTIFIER = 1,
+    TOK_CONSTANT,
+    TOK_ASIGN,
+    TOK_PUNTOYCOMA,
+    TOK_COMA,
+    TOK_MULT,
+    TOK_DIV,
+    TOK_SUMA,
+    TOK_MENOS,
+    TOK_LPAREN,
+    TOK_RPAREN,
 
-#define LONGITUD 33 // Los identificadores tienen como longitud máxima 32 bits
+    TOK_ERROR_GENERAL,
+    TOK_FIN
+} TokenTipo;
 
-FILE *abrir_archivo(char nombre[]);
-int es_constante(char *cadena);
-void scanner();
+typedef struct {
+    TokenTipo tipo;
+    char lexema[256];
+} Token;
 
-#endif // TP_FINAL_SCANNER_H
+void iniciarScanner(FILE *f);
+Token proxToken();
+void imprimirToken(Token t);
+
+#endif
